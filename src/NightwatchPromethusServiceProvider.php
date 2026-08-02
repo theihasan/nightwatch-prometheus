@@ -46,6 +46,10 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
             ], 'nightwatch-promethus-config');
         }
 
+        if (config('nightwatch-promethus.enabled', true)) {
+            $this->loadRoutesFrom(__DIR__.'/../routes/debug.php');
+        }
+
         $this->registerNightwatchIngestReplacementHook();
     }
 
