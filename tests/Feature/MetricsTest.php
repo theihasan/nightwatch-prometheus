@@ -130,6 +130,38 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('nightwatch_http_request_peak_memory_bytes_count{method="GET",route="/health",status_code="200"} 1', $output);
     }
 
+    public function test_request_record_updates_stage_duration_histograms_and_exports_them(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'request',
+            'method' => 'GET',
+            'route_path' => '/health',
+            'status_code' => 200,
+            'duration' => 10000,
+            'bootstrap' => 1000,
+            'before_middleware' => 2000,
+            'action' => 3000,
+            'render' => 4000,
+            'after_middleware' => 5000,
+            'sending' => 6000,
+            'terminating' => 7000,
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $histogram = $snapshot['histograms']['nightwatch_http_request_stage_duration_seconds|method=GET,route=/health,stage=bootstrap,status_code=200'];
+
+        $this->assertSame(0.001, $histogram['sum']);
+        $this->assertSame(1.0, $histogram['count']);
+        $this->assertSame(1.0, $histogram['buckets']['0.001']);
+        $this->assertStringContainsString('# HELP nightwatch_http_request_stage_duration_seconds HTTP request stage duration observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_http_request_stage_duration_seconds histogram', $output);
+        $this->assertStringContainsString('nightwatch_http_request_stage_duration_seconds_bucket{method="GET",route="/health",stage="bootstrap",status_code="200",le="0.001"} 1', $output);
+        $this->assertStringContainsString('nightwatch_http_request_stage_duration_seconds_sum{method="GET",route="/health",stage="bootstrap",status_code="200"} 0.001', $output);
+        $this->assertStringContainsString('nightwatch_http_request_stage_duration_seconds_count{method="GET",route="/health",stage="bootstrap",status_code="200"} 1', $output);
+    }
+
     public function test_log_record_increments_logs_counter_and_exports_it(): void
     {
         $this->app->make(NightwatchPromethusIngest::class)->write([
