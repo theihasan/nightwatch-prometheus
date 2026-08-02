@@ -287,4 +287,21 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('nightwatch_outgoing_http_request_duration_seconds_sum{execution_source="request",host="api.example.com",method="POST",status_code="201"} 0.01', $output);
         $this->assertStringContainsString('nightwatch_outgoing_http_request_duration_seconds_count{execution_source="request",host="api.example.com",method="POST",status_code="201"} 1', $output);
     }
+
+    public function test_command_record_increments_command_executions_counter_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'command',
+            'name' => 'queue:work',
+            'exit_code' => 0,
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $this->assertSame(1.0, $snapshot['metrics']['nightwatch_command_executions_total|exit_code=0,name=queue:work']);
+        $this->assertStringContainsString('# HELP nightwatch_command_executions_total Total command executions observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_command_executions_total counter', $output);
+        $this->assertStringContainsString('nightwatch_command_executions_total{exit_code="0",name="queue:work"} 1', $output);
+    }
 }
