@@ -294,6 +294,7 @@ class MetricsTest extends TestCase
             't' => 'command',
             'name' => 'queue:work',
             'exit_code' => 0,
+            'duration' => 10000,
         ]);
 
         $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
@@ -303,5 +304,30 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('# HELP nightwatch_command_executions_total Total command executions observed by Nightwatch Promethus', $output);
         $this->assertStringContainsString('# TYPE nightwatch_command_executions_total counter', $output);
         $this->assertStringContainsString('nightwatch_command_executions_total{exit_code="0",name="queue:work"} 1', $output);
+    }
+
+    public function test_command_record_updates_command_duration_histogram_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'command',
+            'name' => 'queue:work',
+            'exit_code' => 0,
+            'duration' => 10000,
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $histogram = $snapshot['histograms']['nightwatch_command_duration_seconds|exit_code=0,name=queue:work'];
+
+        $this->assertSame(0.01, $histogram['sum']);
+        $this->assertSame(1.0, $histogram['count']);
+        $this->assertSame(1.0, $histogram['buckets']['0.01']);
+        $this->assertStringContainsString('# HELP nightwatch_command_duration_seconds Command duration observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_command_duration_seconds histogram', $output);
+        $this->assertStringContainsString('nightwatch_command_duration_seconds_bucket{exit_code="0",name="queue:work",le="0.01"} 1', $output);
+        $this->assertStringContainsString('nightwatch_command_duration_seconds_bucket{exit_code="0",name="queue:work",le="+Inf"} 1', $output);
+        $this->assertStringContainsString('nightwatch_command_duration_seconds_sum{exit_code="0",name="queue:work"} 0.01', $output);
+        $this->assertStringContainsString('nightwatch_command_duration_seconds_count{exit_code="0",name="queue:work"} 1', $output);
     }
 }
