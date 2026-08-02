@@ -2,6 +2,7 @@
 
 namespace Ihasan\NightwatchPromethus\Ingest;
 
+use Ihasan\NightwatchPromethus\Contracts\MetricSink;
 use Laravel\Nightwatch\Contracts\Ingest as IngestContract;
 
 class NightwatchPromethusIngest implements IngestContract
@@ -17,11 +18,17 @@ class NightwatchPromethusIngest implements IngestContract
      */
     private array $recordTypeCounts = [];
 
+    public function __construct(private MetricSink $metricSink)
+    {
+        //
+    }
+
     public function write(array $record): void
     {
         $this->writeCount++;
 
         $this->trackRecord($record);
+        $this->recordMetric($record);
     }
 
     public function writeNow(array $record): void
@@ -29,6 +36,7 @@ class NightwatchPromethusIngest implements IngestContract
         $this->writeNowCount++;
 
         $this->trackRecord($record);
+        $this->recordMetric($record);
     }
 
     public function ping(): void
@@ -88,5 +96,27 @@ class NightwatchPromethusIngest implements IngestContract
 
         $this->lastRecordType = $type;
         $this->recordTypeCounts[$type] = ($this->recordTypeCounts[$type] ?? 0) + 1;
+    }
+
+    /**
+     * @param array<mixed> $record
+     */
+    private function recordMetric(array $record): void
+    {
+        if (($record['t'] ?? null) !== 'request') {
+            return;
+        }
+
+        $method = is_string($record['method'] ?? null) ? $record['method'] : 'UNKNOWN';
+        $route = is_string($record['route_path'] ?? null) && $record['route_path'] !== ''
+            ? $record['route_path']
+            : '__unmatched__';
+        $statusCode = (string) ($record['status_code'] ?? 'unknown');
+
+        $this->metricSink->incrementCounter('nightwatch_http_requests_total', [
+            'method' => $method,
+            'route' => $route,
+            'status_code' => $statusCode,
+        ]);
     }
 }

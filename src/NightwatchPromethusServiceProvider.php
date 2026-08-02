@@ -2,7 +2,9 @@
 
 namespace Ihasan\NightwatchPromethus;
 
+use Ihasan\NightwatchPromethus\Contracts\MetricSink;
 use Ihasan\NightwatchPromethus\Ingest\NightwatchPromethusIngest;
+use Ihasan\NightwatchPromethus\Metrics\InMemoryMetricSink;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Nightwatch\Core;
 use Laravel\Nightwatch\Contracts\Ingest as NightwatchIngestContract;
@@ -17,8 +19,12 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
             'nightwatch-promethus'
         );
 
+        $this->app->singleton(MetricSink::class, function (): MetricSink {
+            return new InMemoryMetricSink;
+        });
+
         $this->app->singleton(NightwatchPromethusIngest::class, function (): NightwatchPromethusIngest {
-            return new NightwatchPromethusIngest;
+            return new NightwatchPromethusIngest($this->app->make(MetricSink::class));
         });
     }
 
