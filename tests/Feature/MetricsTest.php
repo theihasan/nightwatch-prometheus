@@ -396,4 +396,21 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('nightwatch_job_attempt_duration_seconds_sum{connection="redis",name="App\\\\Jobs\\\\SyncOrders",queue="default",result="processed"} 0.01', $output);
         $this->assertStringContainsString('nightwatch_job_attempt_duration_seconds_count{connection="redis",name="App\\\\Jobs\\\\SyncOrders",queue="default",result="processed"} 1', $output);
     }
+
+    public function test_scheduled_task_record_increments_scheduled_task_runs_counter_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'scheduled-task',
+            'name' => 'emails:send',
+            'status' => 'processed',
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $this->assertSame(1.0, $snapshot['metrics']['nightwatch_scheduled_task_runs_total|name=emails:send,result=processed']);
+        $this->assertStringContainsString('# HELP nightwatch_scheduled_task_runs_total Total scheduled task runs observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_scheduled_task_runs_total counter', $output);
+        $this->assertStringContainsString('nightwatch_scheduled_task_runs_total{name="emails:send",result="processed"} 1', $output);
+    }
 }
