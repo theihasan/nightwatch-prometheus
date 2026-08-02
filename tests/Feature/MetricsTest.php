@@ -330,4 +330,42 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('nightwatch_command_duration_seconds_sum{exit_code="0",name="queue:work"} 0.01', $output);
         $this->assertStringContainsString('nightwatch_command_duration_seconds_count{exit_code="0",name="queue:work"} 1', $output);
     }
+
+    public function test_queued_job_record_increments_jobs_queued_counter_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'queued-job',
+            'execution_source' => 'request',
+            'name' => 'App\\Jobs\\SyncOrders',
+            'connection' => 'redis',
+            'queue' => 'default',
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $this->assertSame(1.0, $snapshot['metrics']['nightwatch_jobs_queued_total|connection=redis,execution_source=request,name=App\\Jobs\\SyncOrders,queue=default']);
+        $this->assertStringContainsString('# HELP nightwatch_jobs_queued_total Total queued jobs observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_jobs_queued_total counter', $output);
+        $this->assertStringContainsString('nightwatch_jobs_queued_total{connection="redis",execution_source="request",name="App\\\\Jobs\\\\SyncOrders",queue="default"} 1', $output);
+    }
+
+    public function test_job_attempt_record_increments_job_attempts_counter_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'job-attempt',
+            'name' => 'App\\Jobs\\SyncOrders',
+            'connection' => 'redis',
+            'queue' => 'default',
+            'status' => 'processed',
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $this->assertSame(1.0, $snapshot['metrics']['nightwatch_job_attempts_total|connection=redis,name=App\Jobs\SyncOrders,queue=default,result=processed']);
+        $this->assertStringContainsString('# HELP nightwatch_job_attempts_total Total job attempts observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_job_attempts_total counter', $output);
+        $this->assertStringContainsString('nightwatch_job_attempts_total{connection="redis",name="App\\\\Jobs\\\\SyncOrders",queue="default",result="processed"} 1', $output);
+    }
 }
