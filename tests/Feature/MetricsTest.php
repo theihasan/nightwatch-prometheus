@@ -431,4 +431,22 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('# TYPE nightwatch_cache_events_total counter', $output);
         $this->assertStringContainsString('nightwatch_cache_events_total{cache_event_type="hit",execution_source="request",store="redis"} 1', $output);
     }
+
+    public function test_notification_record_increments_notifications_counter_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'notification',
+            'execution_source' => 'request',
+            'channel' => 'mail',
+            'class' => 'App\\Notifications\\OrderShipped',
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $this->assertSame(1.0, $snapshot['metrics']['nightwatch_notifications_total|channel=mail,class=App\Notifications\OrderShipped,execution_source=request']);
+        $this->assertStringContainsString('# HELP nightwatch_notifications_total Total notifications observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_notifications_total counter', $output);
+        $this->assertStringContainsString('nightwatch_notifications_total{channel="mail",class="App\\\\Notifications\\\\OrderShipped",execution_source="request"} 1', $output);
+    }
 }
