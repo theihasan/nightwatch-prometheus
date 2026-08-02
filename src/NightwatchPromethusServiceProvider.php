@@ -3,9 +3,11 @@
 namespace Ihasan\NightwatchPromethus;
 
 use Ihasan\NightwatchPromethus\Contracts\MetricSink;
+use Ihasan\NightwatchPromethus\Contracts\MetricsExporter;
 use Ihasan\NightwatchPromethus\Debug\NightwatchPromethusState;
 use Ihasan\NightwatchPromethus\Ingest\NightwatchPromethusIngest;
 use Ihasan\NightwatchPromethus\Metrics\InMemoryMetricSink;
+use Ihasan\NightwatchPromethus\Metrics\PrometheusTextExporter;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Nightwatch\Core;
 use Laravel\Nightwatch\Contracts\Ingest as NightwatchIngestContract;
@@ -24,6 +26,10 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
             return new InMemoryMetricSink;
         });
 
+        $this->app->singleton(MetricsExporter::class, function (): MetricsExporter {
+            return new PrometheusTextExporter($this->app->make(MetricSink::class));
+        });
+
         $this->app->singleton(NightwatchPromethusIngest::class, function (): NightwatchPromethusIngest {
             return new NightwatchPromethusIngest($this->app->make(MetricSink::class));
         });
@@ -36,6 +42,7 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
         });
 
         $this->app->alias(NightwatchPromethusState::class, 'nightwatch-promethus.state');
+        $this->app->alias(MetricsExporter::class, 'nightwatch-promethus.exporter');
     }
 
     public function boot(): void
