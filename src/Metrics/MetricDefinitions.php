@@ -56,6 +56,17 @@ class MetricDefinitions
         );
     }
 
+    public function httpRequestStageDurationSeconds(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_http_request_stage_duration_seconds',
+            'histogram',
+            'HTTP request stage duration observed by Nightwatch Promethus',
+            ['method', 'route', 'status_code', 'stage'],
+            [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -67,6 +78,7 @@ class MetricDefinitions
             $this->httpRequestDurationSeconds(),
             $this->httpRequestQueriesTotal(),
             $this->httpRequestPeakMemoryBytes(),
+            $this->httpRequestStageDurationSeconds(),
         ];
 
         $indexedDefinitions = [];

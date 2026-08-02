@@ -134,6 +134,17 @@ class NightwatchPromethusIngest implements IngestContract
 
         $this->metricSink->observeHistogram($definition->name, $labels, $duration, $definition->buckets);
 
+        $stageDefinition = $this->metricDefinitions->httpRequestStageDurationSeconds();
+
+        foreach ($this->requestStageDurations($record) as $stage => $stageDuration) {
+            $this->metricSink->observeHistogram(
+                $stageDefinition->name,
+                [...$labels, 'stage' => $stage],
+                $stageDuration,
+                $stageDefinition->buckets,
+            );
+        }
+
         $this->metricSink->incrementCounter(
             $this->metricDefinitions->httpRequestQueriesTotal()->name,
             $labels,
@@ -164,5 +175,34 @@ class NightwatchPromethusIngest implements IngestContract
         $this->metricSink->incrementCounter($this->metricDefinitions->logsTotal()->name, [
             'level' => $level,
         ]);
+    }
+
+    /**
+     * @param array<mixed> $record
+     * @return array<string, float>
+     */
+    private function requestStageDurations(array $record): array
+    {
+        $stageFields = [
+            'bootstrap',
+            'before_middleware',
+            'action',
+            'render',
+            'after_middleware',
+            'sending',
+            'terminating',
+        ];
+
+        $durations = [];
+
+        foreach ($stageFields as $stageField) {
+            if (! is_numeric($record[$stageField] ?? null)) {
+                continue;
+            }
+
+            $durations[$stageField] = (float) $record[$stageField] / 1_000_000;
+        }
+
+        return $durations;
     }
 }
