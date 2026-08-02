@@ -177,4 +177,22 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('# TYPE nightwatch_logs_total counter', $output);
         $this->assertStringContainsString('nightwatch_logs_total{level="error"} 1', $output);
     }
+
+    public function test_exception_record_increments_exceptions_counter_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'exception',
+            'execution_source' => 'request',
+            'class' => 'RuntimeException',
+            'handled' => false,
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $this->assertSame(1.0, $snapshot['metrics']['nightwatch_exceptions_total|class=RuntimeException,execution_source=request,result=unhandled']);
+        $this->assertStringContainsString('# HELP nightwatch_exceptions_total Total exceptions observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_exceptions_total counter', $output);
+        $this->assertStringContainsString('nightwatch_exceptions_total{class="RuntimeException",execution_source="request",result="unhandled"} 1', $output);
+    }
 }
