@@ -358,6 +358,7 @@ class MetricsTest extends TestCase
             'connection' => 'redis',
             'queue' => 'default',
             'status' => 'processed',
+            'duration' => 10000,
         ]);
 
         $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
@@ -367,5 +368,32 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('# HELP nightwatch_job_attempts_total Total job attempts observed by Nightwatch Promethus', $output);
         $this->assertStringContainsString('# TYPE nightwatch_job_attempts_total counter', $output);
         $this->assertStringContainsString('nightwatch_job_attempts_total{connection="redis",name="App\\\\Jobs\\\\SyncOrders",queue="default",result="processed"} 1', $output);
+    }
+
+    public function test_job_attempt_record_updates_job_attempt_duration_histogram_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'job-attempt',
+            'name' => 'App\\Jobs\\SyncOrders',
+            'connection' => 'redis',
+            'queue' => 'default',
+            'status' => 'processed',
+            'duration' => 10000,
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $histogram = $snapshot['histograms']['nightwatch_job_attempt_duration_seconds|connection=redis,name=App\Jobs\SyncOrders,queue=default,result=processed'];
+
+        $this->assertSame(0.01, $histogram['sum']);
+        $this->assertSame(1.0, $histogram['count']);
+        $this->assertSame(1.0, $histogram['buckets']['0.01']);
+        $this->assertStringContainsString('# HELP nightwatch_job_attempt_duration_seconds Job attempt duration observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_job_attempt_duration_seconds histogram', $output);
+        $this->assertStringContainsString('nightwatch_job_attempt_duration_seconds_bucket{connection="redis",name="App\\\\Jobs\\\\SyncOrders",queue="default",result="processed",le="0.01"} 1', $output);
+        $this->assertStringContainsString('nightwatch_job_attempt_duration_seconds_bucket{connection="redis",name="App\\\\Jobs\\\\SyncOrders",queue="default",result="processed",le="+Inf"} 1', $output);
+        $this->assertStringContainsString('nightwatch_job_attempt_duration_seconds_sum{connection="redis",name="App\\\\Jobs\\\\SyncOrders",queue="default",result="processed"} 0.01', $output);
+        $this->assertStringContainsString('nightwatch_job_attempt_duration_seconds_count{connection="redis",name="App\\\\Jobs\\\\SyncOrders",queue="default",result="processed"} 1', $output);
     }
 }
