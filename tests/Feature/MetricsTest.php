@@ -16,6 +16,7 @@ class MetricsTest extends TestCase
             'method' => 'GET',
             'route_path' => '/health',
             'status_code' => 200,
+            'duration' => 10000,
         ]);
 
         $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
@@ -30,6 +31,7 @@ class MetricsTest extends TestCase
             'method' => 'GET',
             'route_path' => '/health',
             'status_code' => 200,
+            'duration' => 10000,
         ]);
 
         $output = $this->app->make(MetricsExporter::class)->render();
@@ -46,6 +48,7 @@ class MetricsTest extends TestCase
             'method' => 'GET',
             'route_path' => '/health',
             'status_code' => 200,
+            'duration' => 10000,
         ]);
 
         $response = $this->get('/metrics');
@@ -53,6 +56,31 @@ class MetricsTest extends TestCase
         $response->assertOk();
         $response->assertHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
         $response->assertSee('# TYPE nightwatch_http_requests_total counter', false);
+    }
+
+    public function test_request_record_updates_request_duration_histogram_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'request',
+            'method' => 'GET',
+            'route_path' => '/health',
+            'status_code' => 200,
+            'duration' => 10000,
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $histogram = $snapshot['histograms']['nightwatch_http_request_duration_seconds|method=GET,route=/health,status_code=200'];
+
+        $this->assertSame(0.01, $histogram['sum']);
+        $this->assertSame(1.0, $histogram['count']);
+        $this->assertSame(1.0, $histogram['buckets']['0.01']);
+        $this->assertStringContainsString('# TYPE nightwatch_http_request_duration_seconds histogram', $output);
+        $this->assertStringContainsString('nightwatch_http_request_duration_seconds_bucket{method="GET",route="/health",status_code="200",le="0.01"} 1', $output);
+        $this->assertStringContainsString('nightwatch_http_request_duration_seconds_bucket{method="GET",route="/health",status_code="200",le="+Inf"} 1', $output);
+        $this->assertStringContainsString('nightwatch_http_request_duration_seconds_sum{method="GET",route="/health",status_code="200"} 0.01', $output);
+        $this->assertStringContainsString('nightwatch_http_request_duration_seconds_count{method="GET",route="/health",status_code="200"} 1', $output);
     }
 
     public function test_log_record_increments_logs_counter_and_exports_it(): void
