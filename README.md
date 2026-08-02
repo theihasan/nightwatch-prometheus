@@ -238,16 +238,3 @@ scrape_configs:
 ```
 
 If your metrics route path is customized in `config/nightwatch-promethus.php`, update `metrics_path` to match.
-
-## Recommendation
-
-Before expanding the metric surface further, verify this package inside a real Laravel application with Nightwatch enabled:
-
-1. Trigger real requests, queries, logs, notifications, queues, and scheduled tasks.
-2. Inspect `/metrics` output.
-3. Confirm Prometheus can scrape it successfully.
-4. Check label shapes and cardinality in real traffic.
-
-## License
-
-MIT
