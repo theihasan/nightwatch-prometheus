@@ -121,12 +121,18 @@ class NightwatchPromethusIngest implements IngestContract
             ? $record['route_path']
             : '__unmatched__';
         $statusCode = (string) ($record['status_code'] ?? 'unknown');
-
-        $this->metricSink->incrementCounter($this->metricDefinitions->httpRequestsTotal()->name, [
+        $labels = [
             'method' => $method,
             'route' => $route,
             'status_code' => $statusCode,
-        ]);
+        ];
+
+        $this->metricSink->incrementCounter($this->metricDefinitions->httpRequestsTotal()->name, $labels);
+
+        $duration = (float) (($record['duration'] ?? 0) / 1_000_000);
+        $definition = $this->metricDefinitions->httpRequestDurationSeconds();
+
+        $this->metricSink->observeHistogram($definition->name, $labels, $duration, $definition->buckets);
     }
 
     /**

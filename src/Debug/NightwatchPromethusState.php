@@ -17,7 +17,8 @@ class NightwatchPromethusState
     /**
      * @return array{
      *     ingest: array{write_count: int, write_now_count: int, last_record_type: ?string, record_type_counts: array<string, int>},
-     *     metrics: array<string, float>
+     *     metrics: array<string, float>,
+     *     histograms: array<string, array{buckets: array<string, float>, sum: float, count: float}>
      * }
      */
     public function snapshot(): array
@@ -30,6 +31,7 @@ class NightwatchPromethusState
                 'record_type_counts' => $this->ingest->recordTypeCounts(),
             ],
             'metrics' => $this->metricSink->counters(),
+            'histograms' => $this->metricSink->histograms(),
         ];
     }
 }
