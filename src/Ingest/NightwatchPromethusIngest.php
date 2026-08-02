@@ -104,10 +104,18 @@ class NightwatchPromethusIngest implements IngestContract
      */
     private function recordMetric(array $record): void
     {
-        if (($record['t'] ?? null) !== 'request') {
-            return;
-        }
+        match ($record['t'] ?? null) {
+            'request' => $this->recordRequestMetric($record),
+            'log' => $this->recordLogMetric($record),
+            default => null,
+        };
+    }
 
+    /**
+     * @param array<mixed> $record
+     */
+    private function recordRequestMetric(array $record): void
+    {
         $method = is_string($record['method'] ?? null) ? $record['method'] : 'UNKNOWN';
         $route = is_string($record['route_path'] ?? null) && $record['route_path'] !== ''
             ? $record['route_path']
@@ -118,6 +126,20 @@ class NightwatchPromethusIngest implements IngestContract
             'method' => $method,
             'route' => $route,
             'status_code' => $statusCode,
+        ]);
+    }
+
+    /**
+     * @param array<mixed> $record
+     */
+    private function recordLogMetric(array $record): void
+    {
+        $level = is_string($record['level'] ?? null) && $record['level'] !== ''
+            ? $record['level']
+            : 'unknown';
+
+        $this->metricSink->incrementCounter($this->metricDefinitions->logsTotal()->name, [
+            'level' => $level,
         ]);
     }
 }

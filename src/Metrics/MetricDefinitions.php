@@ -14,6 +14,16 @@ class MetricDefinitions
         );
     }
 
+    public function logsTotal(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_logs_total',
+            'counter',
+            'Total log records observed by Nightwatch Promethus',
+            ['level'],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -21,6 +31,7 @@ class MetricDefinitions
     {
         $definitions = [
             $this->httpRequestsTotal(),
+            $this->logsTotal(),
         ];
 
         $indexedDefinitions = [];
