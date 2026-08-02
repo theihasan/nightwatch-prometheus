@@ -150,6 +150,16 @@ class MetricDefinitions
         );
     }
 
+    public function jobAttemptsTotal(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_job_attempts_total',
+            'counter',
+            'Total job attempts observed by Nightwatch Promethus',
+            ['name', 'connection', 'queue', 'result'],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -170,6 +180,7 @@ class MetricDefinitions
             $this->commandExecutionsTotal(),
             $this->commandDurationSeconds(),
             $this->jobsQueuedTotal(),
+            $this->jobAttemptsTotal(),
         ];
 
         $indexedDefinitions = [];

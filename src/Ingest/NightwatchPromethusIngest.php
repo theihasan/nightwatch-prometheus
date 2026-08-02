@@ -108,6 +108,7 @@ class NightwatchPromethusIngest implements IngestContract
             'request' => $this->recordRequestMetric($record),
             'command' => $this->recordCommandMetric($record),
             'exception' => $this->recordExceptionMetric($record),
+            'job-attempt' => $this->recordJobAttemptMetric($record),
             'queued-job' => $this->recordQueuedJobMetric($record),
             'query' => $this->recordQueryMetric($record),
             'outgoing-request' => $this->recordOutgoingRequestMetric($record),
@@ -326,6 +327,32 @@ class NightwatchPromethusIngest implements IngestContract
             'name' => $name,
             'connection' => $connection,
             'queue' => $queue,
+        ]);
+    }
+
+    /**
+     * @param array<mixed> $record
+     */
+    private function recordJobAttemptMetric(array $record): void
+    {
+        $name = is_string($record['name'] ?? null) && $record['name'] !== ''
+            ? $record['name']
+            : 'unknown';
+        $connection = is_string($record['connection'] ?? null) && $record['connection'] !== ''
+            ? $record['connection']
+            : 'unknown';
+        $queue = is_string($record['queue'] ?? null) && $record['queue'] !== ''
+            ? $record['queue']
+            : 'unknown';
+        $result = is_string($record['status'] ?? null) && $record['status'] !== ''
+            ? $record['status']
+            : 'unknown';
+
+        $this->metricSink->incrementCounter($this->metricDefinitions->jobAttemptsTotal()->name, [
+            'name' => $name,
+            'connection' => $connection,
+            'queue' => $queue,
+            'result' => $result,
         ]);
     }
 
