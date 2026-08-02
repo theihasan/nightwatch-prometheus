@@ -106,6 +106,7 @@ class NightwatchPromethusIngest implements IngestContract
     {
         match ($record['t'] ?? null) {
             'cache-event' => $this->recordCacheEventMetric($record),
+            'notification' => $this->recordNotificationMetric($record),
             'request' => $this->recordRequestMetric($record),
             'command' => $this->recordCommandMetric($record),
             'exception' => $this->recordExceptionMetric($record),
@@ -408,6 +409,28 @@ class NightwatchPromethusIngest implements IngestContract
             'execution_source' => $executionSource,
             'store' => $store,
             'cache_event_type' => $type,
+        ]);
+    }
+
+    /**
+     * @param array<mixed> $record
+     */
+    private function recordNotificationMetric(array $record): void
+    {
+        $executionSource = is_string($record['execution_source'] ?? null) && $record['execution_source'] !== ''
+            ? $record['execution_source']
+            : 'unknown';
+        $channel = is_string($record['channel'] ?? null) && $record['channel'] !== ''
+            ? $record['channel']
+            : 'unknown';
+        $class = is_string($record['class'] ?? null) && $record['class'] !== ''
+            ? $record['class']
+            : 'unknown';
+
+        $this->metricSink->incrementCounter($this->metricDefinitions->notificationsTotal()->name, [
+            'execution_source' => $executionSource,
+            'channel' => $channel,
+            'class' => $class,
         ]);
     }
 

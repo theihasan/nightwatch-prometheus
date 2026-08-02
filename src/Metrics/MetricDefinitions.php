@@ -191,6 +191,16 @@ class MetricDefinitions
         );
     }
 
+    public function notificationsTotal(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_notifications_total',
+            'counter',
+            'Total notifications observed by Nightwatch Promethus',
+            ['execution_source', 'channel', 'class'],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -215,6 +225,7 @@ class MetricDefinitions
             $this->jobAttemptDurationSeconds(),
             $this->scheduledTaskRunsTotal(),
             $this->cacheEventsTotal(),
+            $this->notificationsTotal(),
         ];
 
         $indexedDefinitions = [];
