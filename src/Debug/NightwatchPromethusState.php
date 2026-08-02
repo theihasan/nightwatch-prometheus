@@ -4,7 +4,6 @@ namespace Ihasan\NightwatchPromethus\Debug;
 
 use Ihasan\NightwatchPromethus\Contracts\MetricSink;
 use Ihasan\NightwatchPromethus\Ingest\NightwatchPromethusIngest;
-use Ihasan\NightwatchPromethus\Metrics\InMemoryMetricSink;
 
 class NightwatchPromethusState
 {
@@ -30,9 +29,7 @@ class NightwatchPromethusState
                 'last_record_type' => $this->ingest->lastRecordType(),
                 'record_type_counts' => $this->ingest->recordTypeCounts(),
             ],
-            'metrics' => $this->metricSink instanceof InMemoryMetricSink
-                ? $this->metricSink->counters()
-                : [],
+            'metrics' => $this->metricSink->counters(),
         ];
     }
 }
