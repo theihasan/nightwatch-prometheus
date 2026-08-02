@@ -87,6 +87,17 @@ class MetricDefinitions
         );
     }
 
+    public function dbQueryDurationSeconds(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_db_query_duration_seconds',
+            'histogram',
+            'Database query duration observed by Nightwatch Promethus',
+            ['execution_source', 'connection', 'connection_type'],
+            [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -101,6 +112,7 @@ class MetricDefinitions
             $this->httpRequestStageDurationSeconds(),
             $this->exceptionsTotal(),
             $this->dbQueriesTotal(),
+            $this->dbQueryDurationSeconds(),
         ];
 
         $indexedDefinitions = [];
