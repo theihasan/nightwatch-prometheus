@@ -108,6 +108,7 @@ class NightwatchPromethusIngest implements IngestContract
             'request' => $this->recordRequestMetric($record),
             'exception' => $this->recordExceptionMetric($record),
             'query' => $this->recordQueryMetric($record),
+            'outgoing-request' => $this->recordOutgoingRequestMetric($record),
             'log' => $this->recordLogMetric($record),
             default => null,
         };
@@ -232,6 +233,30 @@ class NightwatchPromethusIngest implements IngestContract
                 $definition->buckets,
             );
         }
+    }
+
+    /**
+     * @param array<mixed> $record
+     */
+    private function recordOutgoingRequestMetric(array $record): void
+    {
+        $executionSource = is_string($record['execution_source'] ?? null) && $record['execution_source'] !== ''
+            ? $record['execution_source']
+            : 'unknown';
+        $host = is_string($record['host'] ?? null) && $record['host'] !== ''
+            ? $record['host']
+            : 'unknown';
+        $method = is_string($record['method'] ?? null) && $record['method'] !== ''
+            ? $record['method']
+            : 'UNKNOWN';
+        $statusCode = (string) ($record['status_code'] ?? 'unknown');
+
+        $this->metricSink->incrementCounter($this->metricDefinitions->outgoingHttpRequestsTotal()->name, [
+            'execution_source' => $executionSource,
+            'host' => $host,
+            'method' => $method,
+            'status_code' => $statusCode,
+        ]);
     }
 
     /**

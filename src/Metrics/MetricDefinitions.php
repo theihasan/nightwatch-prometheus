@@ -98,6 +98,16 @@ class MetricDefinitions
         );
     }
 
+    public function outgoingHttpRequestsTotal(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_outgoing_http_requests_total',
+            'counter',
+            'Total outgoing HTTP requests observed by Nightwatch Promethus',
+            ['execution_source', 'host', 'method', 'status_code'],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -113,6 +123,7 @@ class MetricDefinitions
             $this->exceptionsTotal(),
             $this->dbQueriesTotal(),
             $this->dbQueryDurationSeconds(),
+            $this->outgoingHttpRequestsTotal(),
         ];
 
         $indexedDefinitions = [];
