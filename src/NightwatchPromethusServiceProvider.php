@@ -68,11 +68,21 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
         }
 
         if (config('nightwatch-promethus.enabled', true)) {
-            $this->loadRoutesFrom(__DIR__.'/../routes/debug.php');
-            $this->loadRoutesFrom(__DIR__.'/../routes/metrics.php');
+            $this->registerRoutes();
         }
 
         $this->registerNightwatchIngestReplacementHook();
+    }
+
+    private function registerRoutes(): void
+    {
+        if ($this->metricsRouteEnabled()) {
+            $this->loadRoutesFrom(__DIR__.'/../routes/metrics.php');
+        }
+
+        if ($this->debugRouteEnabled()) {
+            $this->loadRoutesFrom(__DIR__.'/../routes/debug.php');
+        }
     }
 
     private function registerNightwatchIngestReplacementHook(): void
@@ -112,5 +122,21 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
             ),
             default => throw new RuntimeException('Unsupported nightwatch-promethus storage driver ['.config('nightwatch-promethus.storage.driver').'].'),
         };
+    }
+
+    private function metricsRouteEnabled(): bool
+    {
+        return (bool) config('nightwatch-promethus.routes.metrics.enabled', true);
+    }
+
+    private function debugRouteEnabled(): bool
+    {
+        $configured = config('nightwatch-promethus.routes.debug.enabled');
+
+        if ($configured === null) {
+            return ! $this->app->environment('production');
+        }
+
+        return (bool) $configured;
     }
 }
