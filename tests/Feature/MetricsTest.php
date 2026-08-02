@@ -195,4 +195,22 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('# TYPE nightwatch_exceptions_total counter', $output);
         $this->assertStringContainsString('nightwatch_exceptions_total{class="RuntimeException",execution_source="request",result="unhandled"} 1', $output);
     }
+
+    public function test_query_record_increments_db_queries_counter_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'query',
+            'execution_source' => 'request',
+            'connection' => 'mysql',
+            'connection_type' => 'read',
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $this->assertSame(1.0, $snapshot['metrics']['nightwatch_db_queries_total|connection=mysql,connection_type=read,execution_source=request']);
+        $this->assertStringContainsString('# HELP nightwatch_db_queries_total Total database queries observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_db_queries_total counter', $output);
+        $this->assertStringContainsString('nightwatch_db_queries_total{connection="mysql",connection_type="read",execution_source="request"} 1', $output);
+    }
 }
