@@ -112,6 +112,7 @@ class NightwatchPromethusIngest implements IngestContract
             'queued-job' => $this->recordQueuedJobMetric($record),
             'query' => $this->recordQueryMetric($record),
             'outgoing-request' => $this->recordOutgoingRequestMetric($record),
+            'scheduled-task' => $this->recordScheduledTaskMetric($record),
             'log' => $this->recordLogMetric($record),
             default => null,
         };
@@ -367,6 +368,24 @@ class NightwatchPromethusIngest implements IngestContract
                 $definition->buckets,
             );
         }
+    }
+
+    /**
+     * @param array<mixed> $record
+     */
+    private function recordScheduledTaskMetric(array $record): void
+    {
+        $name = is_string($record['name'] ?? null) && $record['name'] !== ''
+            ? $record['name']
+            : 'unknown';
+        $result = is_string($record['status'] ?? null) && $record['status'] !== ''
+            ? $record['status']
+            : 'unknown';
+
+        $this->metricSink->incrementCounter($this->metricDefinitions->scheduledTaskRunsTotal()->name, [
+            'name' => $name,
+            'result' => $result,
+        ]);
     }
 
     /**

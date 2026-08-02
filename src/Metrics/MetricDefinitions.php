@@ -171,6 +171,16 @@ class MetricDefinitions
         );
     }
 
+    public function scheduledTaskRunsTotal(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_scheduled_task_runs_total',
+            'counter',
+            'Total scheduled task runs observed by Nightwatch Promethus',
+            ['name', 'result'],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -193,6 +203,7 @@ class MetricDefinitions
             $this->jobsQueuedTotal(),
             $this->jobAttemptsTotal(),
             $this->jobAttemptDurationSeconds(),
+            $this->scheduledTaskRunsTotal(),
         ];
 
         $indexedDefinitions = [];
