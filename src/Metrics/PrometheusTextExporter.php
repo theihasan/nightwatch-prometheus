@@ -15,23 +15,23 @@ class PrometheusTextExporter implements MetricsExporter
     public function render(): string
     {
         $lines = [];
-        $groupedMetrics = [];
+        $groupedCounters = [];
 
         foreach ($this->metricSink->counters() as $key => $value) {
             [$name, $labels] = $this->parseCounterKey($key);
 
-            $groupedMetrics[$name][] = [
+            $groupedCounters[$name][] = [
                 'labels' => $labels,
                 'value' => $value,
             ];
         }
 
-        ksort($groupedMetrics);
+        ksort($groupedCounters);
 
-        foreach ($groupedMetrics as $name => $samples) {
+        foreach ($groupedCounters as $name => $samples) {
             $definition = $this->metricDefinitions->all()[$name] ?? null;
 
-            if ($definition === null) {
+            if ($definition === null || $definition->type !== 'counter') {
                 continue;
             }
 
@@ -40,6 +40,51 @@ class PrometheusTextExporter implements MetricsExporter
 
             foreach ($samples as $sample) {
                 $lines[] = $definition->name.$this->formatLabels($sample['labels']).' '.$sample['value'];
+            }
+
+            $lines[] = '';
+        }
+
+        $groupedHistograms = [];
+
+        foreach ($this->metricSink->histograms() as $key => $values) {
+            [$name, $labels] = $this->parseCounterKey($key);
+
+            $groupedHistograms[$name][] = [
+                'labels' => $labels,
+                'values' => $values,
+            ];
+        }
+
+        ksort($groupedHistograms);
+
+        foreach ($groupedHistograms as $name => $samples) {
+            $definition = $this->metricDefinitions->all()[$name] ?? null;
+
+            if ($definition === null || $definition->type !== 'histogram') {
+                continue;
+            }
+
+            $lines[] = '# HELP '.$definition->name.' '.$definition->help;
+            $lines[] = '# TYPE '.$definition->name.' '.$definition->type;
+
+            foreach ($samples as $sample) {
+                $bucketValues = $sample['values']['buckets'];
+                uksort($bucketValues, static fn (string $a, string $b): int => (float) $a <=> (float) $b);
+
+                foreach ($bucketValues as $bucket => $count) {
+                    $lines[] = $definition->name.'_bucket'.$this->formatLabels([
+                        ...$sample['labels'],
+                        'le' => $bucket,
+                    ]).' '.$count;
+                }
+
+                $lines[] = $definition->name.'_bucket'.$this->formatLabels([
+                    ...$sample['labels'],
+                    'le' => '+Inf',
+                ]).' '.$sample['values']['count'];
+                $lines[] = $definition->name.'_sum'.$this->formatLabels($sample['labels']).' '.$sample['values']['sum'];
+                $lines[] = $definition->name.'_count'.$this->formatLabels($sample['labels']).' '.$sample['values']['count'];
             }
 
             $lines[] = '';
