@@ -58,6 +58,7 @@ class RedisDriverTest extends TestCase
 
         $output = $this->app->make(MetricsExporter::class)->render();
 
+        $this->assertStringContainsString('# HELP nightwatch_http_requests_total Total HTTP requests observed by Nightwatch Promethus', $output);
         $this->assertStringContainsString('nightwatch_http_requests_total{method="GET",route="/health",status_code="200"} 1', $output);
     }
 
