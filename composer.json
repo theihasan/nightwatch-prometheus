@@ -13,6 +13,14 @@
             "Ihasan\\NightwatchPromethus\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Ihasan\\NightwatchPromethus\\Tests\\": "tests/"
+        }
+    },
+    "require-dev": {
+        "orchestra/testbench": "^11.0"
+    },
     "extra": {
         "laravel": {
             "providers": [
