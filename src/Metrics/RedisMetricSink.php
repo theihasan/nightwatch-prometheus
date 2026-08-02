@@ -25,6 +25,35 @@ class RedisMetricSink implements MetricSink
         ]);
     }
 
+    public function observeHistogram(string $name, array $labels, int|float $value, array $buckets): void
+    {
+        $key = $this->counterKey($name, $labels);
+
+        foreach ($buckets as $bucket) {
+            if ((float) $value > $bucket) {
+                continue;
+            }
+
+            $this->connection()->command('HINCRBYFLOAT', [
+                $this->histogramBucketsKey(),
+                $key.'|le='.$this->normalizeBucket($bucket),
+                '1',
+            ]);
+        }
+
+        $this->connection()->command('HINCRBYFLOAT', [
+            $this->histogramSumsKey(),
+            $key,
+            (string) $value,
+        ]);
+
+        $this->connection()->command('HINCRBYFLOAT', [
+            $this->histogramCountsKey(),
+            $key,
+            '1',
+        ]);
+    }
+
     public function counters(): array
     {
         $values = $this->connection()->command('HGETALL', [$this->countersKey()]);
@@ -42,9 +71,58 @@ class RedisMetricSink implements MetricSink
         return $counters;
     }
 
+    public function histograms(): array
+    {
+        $bucketValues = $this->connection()->command('HGETALL', [$this->histogramBucketsKey()]);
+        $sumValues = $this->connection()->command('HGETALL', [$this->histogramSumsKey()]);
+        $countValues = $this->connection()->command('HGETALL', [$this->histogramCountsKey()]);
+
+        $histograms = [];
+
+        if (is_array($bucketValues)) {
+            foreach ($bucketValues as $key => $value) {
+                [$histogramKey, $bucket] = explode('|le=', (string) $key, 2);
+
+                $histograms[$histogramKey] ??= ['buckets' => [], 'sum' => 0.0, 'count' => 0.0];
+                $histograms[$histogramKey]['buckets'][$bucket] = (float) $value;
+            }
+        }
+
+        if (is_array($sumValues)) {
+            foreach ($sumValues as $key => $value) {
+                $histograms[(string) $key] ??= ['buckets' => [], 'sum' => 0.0, 'count' => 0.0];
+                $histograms[(string) $key]['sum'] = (float) $value;
+            }
+        }
+
+        if (is_array($countValues)) {
+            foreach ($countValues as $key => $value) {
+                $histograms[(string) $key] ??= ['buckets' => [], 'sum' => 0.0, 'count' => 0.0];
+                $histograms[(string) $key]['count'] = (float) $value;
+            }
+        }
+
+        return $histograms;
+    }
+
     private function countersKey(): string
     {
         return $this->prefix.':counters';
+    }
+
+    private function histogramBucketsKey(): string
+    {
+        return $this->prefix.':histograms:buckets';
+    }
+
+    private function histogramSumsKey(): string
+    {
+        return $this->prefix.':histograms:sums';
+    }
+
+    private function histogramCountsKey(): string
+    {
+        return $this->prefix.':histograms:counts';
     }
 
     /**
@@ -70,5 +148,10 @@ class RedisMetricSink implements MetricSink
     private function connection(): Connection
     {
         return $this->redis->connection($this->connection);
+    }
+
+    private function normalizeBucket(float $bucket): string
+    {
+        return rtrim(rtrim(sprintf('%.15F', $bucket), '0'), '.');
     }
 }
