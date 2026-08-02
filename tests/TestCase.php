@@ -10,6 +10,7 @@ abstract class TestCase extends Orchestra
     protected function getEnvironmentSetUp($app): void
     {
         $app['config']->set('app.key', 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=');
+        $app['config']->set('nightwatch-promethus.storage.driver', 'in_memory');
     }
 
     protected function getPackageProviders($app): array
