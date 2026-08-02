@@ -14,10 +14,6 @@ class PrometheusTextExporter implements MetricsExporter
 
     public function render(): string
     {
-        if (! $this->metricSink instanceof InMemoryMetricSink) {
-            return '';
-        }
-
         $lines = [];
         $groupedMetrics = [];
 

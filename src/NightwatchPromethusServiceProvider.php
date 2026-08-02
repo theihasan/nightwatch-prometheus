@@ -8,6 +8,8 @@ use Ihasan\NightwatchPromethus\Debug\NightwatchPromethusState;
 use Ihasan\NightwatchPromethus\Ingest\NightwatchPromethusIngest;
 use Ihasan\NightwatchPromethus\Metrics\InMemoryMetricSink;
 use Ihasan\NightwatchPromethus\Metrics\PrometheusTextExporter;
+use Ihasan\NightwatchPromethus\Metrics\RedisMetricSink;
+use Illuminate\Contracts\Redis\Factory as RedisFactory;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Nightwatch\Core;
 use Laravel\Nightwatch\Contracts\Ingest as NightwatchIngestContract;
@@ -23,7 +25,14 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(MetricSink::class, function (): MetricSink {
-            return new InMemoryMetricSink;
+            return match (config('nightwatch-promethus.storage.driver', 'redis')) {
+                'in_memory' => new InMemoryMetricSink,
+                default => new RedisMetricSink(
+                    $this->app->make(RedisFactory::class),
+                    config('nightwatch-promethus.storage.redis.connection', 'default'),
+                    config('nightwatch-promethus.storage.redis.prefix', 'nightwatch_promethus'),
+                ),
+            };
         });
 
         $this->app->singleton(MetricsExporter::class, function (): MetricsExporter {
