@@ -106,6 +106,7 @@ class NightwatchPromethusIngest implements IngestContract
     {
         match ($record['t'] ?? null) {
             'request' => $this->recordRequestMetric($record),
+            'exception' => $this->recordExceptionMetric($record),
             'log' => $this->recordLogMetric($record),
             default => null,
         };
@@ -174,6 +175,26 @@ class NightwatchPromethusIngest implements IngestContract
 
         $this->metricSink->incrementCounter($this->metricDefinitions->logsTotal()->name, [
             'level' => $level,
+        ]);
+    }
+
+    /**
+     * @param array<mixed> $record
+     */
+    private function recordExceptionMetric(array $record): void
+    {
+        $executionSource = is_string($record['execution_source'] ?? null) && $record['execution_source'] !== ''
+            ? $record['execution_source']
+            : 'unknown';
+        $class = is_string($record['class'] ?? null) && $record['class'] !== ''
+            ? $record['class']
+            : 'unknown';
+        $result = (bool) ($record['handled'] ?? false) ? 'handled' : 'unhandled';
+
+        $this->metricSink->incrementCounter($this->metricDefinitions->exceptionsTotal()->name, [
+            'execution_source' => $executionSource,
+            'class' => $class,
+            'result' => $result,
         ]);
     }
 

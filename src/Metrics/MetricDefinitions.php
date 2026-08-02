@@ -67,6 +67,16 @@ class MetricDefinitions
         );
     }
 
+    public function exceptionsTotal(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_exceptions_total',
+            'counter',
+            'Total exceptions observed by Nightwatch Promethus',
+            ['execution_source', 'class', 'result'],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -79,6 +89,7 @@ class MetricDefinitions
             $this->httpRequestQueriesTotal(),
             $this->httpRequestPeakMemoryBytes(),
             $this->httpRequestStageDurationSeconds(),
+            $this->exceptionsTotal(),
         ];
 
         $indexedDefinitions = [];
