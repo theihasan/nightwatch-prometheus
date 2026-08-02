@@ -106,6 +106,7 @@ class NightwatchPromethusIngest implements IngestContract
     {
         match ($record['t'] ?? null) {
             'request' => $this->recordRequestMetric($record),
+            'command' => $this->recordCommandMetric($record),
             'exception' => $this->recordExceptionMetric($record),
             'query' => $this->recordQueryMetric($record),
             'outgoing-request' => $this->recordOutgoingRequestMetric($record),
@@ -270,6 +271,22 @@ class NightwatchPromethusIngest implements IngestContract
                 $definition->buckets,
             );
         }
+    }
+
+    /**
+     * @param array<mixed> $record
+     */
+    private function recordCommandMetric(array $record): void
+    {
+        $name = is_string($record['name'] ?? null) && $record['name'] !== ''
+            ? $record['name']
+            : 'unknown';
+        $exitCode = (string) ($record['exit_code'] ?? 'unknown');
+
+        $this->metricSink->incrementCounter($this->metricDefinitions->commandExecutionsTotal()->name, [
+            'name' => $name,
+            'exit_code' => $exitCode,
+        ]);
     }
 
     /**

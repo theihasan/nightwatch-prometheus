@@ -119,6 +119,16 @@ class MetricDefinitions
         );
     }
 
+    public function commandExecutionsTotal(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_command_executions_total',
+            'counter',
+            'Total command executions observed by Nightwatch Promethus',
+            ['name', 'exit_code'],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -136,6 +146,7 @@ class MetricDefinitions
             $this->dbQueryDurationSeconds(),
             $this->outgoingHttpRequestsTotal(),
             $this->outgoingHttpRequestDurationSeconds(),
+            $this->commandExecutionsTotal(),
         ];
 
         $indexedDefinitions = [];
