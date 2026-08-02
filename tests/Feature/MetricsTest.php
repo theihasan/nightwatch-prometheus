@@ -413,4 +413,22 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('# TYPE nightwatch_scheduled_task_runs_total counter', $output);
         $this->assertStringContainsString('nightwatch_scheduled_task_runs_total{name="emails:send",result="processed"} 1', $output);
     }
+
+    public function test_cache_event_record_increments_cache_events_counter_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'cache-event',
+            'execution_source' => 'request',
+            'store' => 'redis',
+            'type' => 'hit',
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $this->assertSame(1.0, $snapshot['metrics']['nightwatch_cache_events_total|cache_event_type=hit,execution_source=request,store=redis']);
+        $this->assertStringContainsString('# HELP nightwatch_cache_events_total Total cache events observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_cache_events_total counter', $output);
+        $this->assertStringContainsString('nightwatch_cache_events_total{cache_event_type="hit",execution_source="request",store="redis"} 1', $output);
+    }
 }
