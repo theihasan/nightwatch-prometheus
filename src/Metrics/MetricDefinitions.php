@@ -181,6 +181,16 @@ class MetricDefinitions
         );
     }
 
+    public function cacheEventsTotal(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_cache_events_total',
+            'counter',
+            'Total cache events observed by Nightwatch Promethus',
+            ['execution_source', 'store', 'cache_event_type'],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -204,6 +214,7 @@ class MetricDefinitions
             $this->jobAttemptsTotal(),
             $this->jobAttemptDurationSeconds(),
             $this->scheduledTaskRunsTotal(),
+            $this->cacheEventsTotal(),
         ];
 
         $indexedDefinitions = [];
