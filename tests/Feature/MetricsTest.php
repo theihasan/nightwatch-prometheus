@@ -439,6 +439,7 @@ class MetricsTest extends TestCase
             'execution_source' => 'request',
             'channel' => 'mail',
             'class' => 'App\\Notifications\\OrderShipped',
+            'duration' => 10000,
         ]);
 
         $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
@@ -448,5 +449,31 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('# HELP nightwatch_notifications_total Total notifications observed by Nightwatch Promethus', $output);
         $this->assertStringContainsString('# TYPE nightwatch_notifications_total counter', $output);
         $this->assertStringContainsString('nightwatch_notifications_total{channel="mail",class="App\\\\Notifications\\\\OrderShipped",execution_source="request"} 1', $output);
+    }
+
+    public function test_notification_record_updates_notification_duration_histogram_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'notification',
+            'execution_source' => 'request',
+            'channel' => 'mail',
+            'class' => 'App\\Notifications\\OrderShipped',
+            'duration' => 10000,
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $histogram = $snapshot['histograms']['nightwatch_notification_duration_seconds|channel=mail,class=App\Notifications\OrderShipped,execution_source=request'];
+
+        $this->assertSame(0.01, $histogram['sum']);
+        $this->assertSame(1.0, $histogram['count']);
+        $this->assertSame(1.0, $histogram['buckets']['0.01']);
+        $this->assertStringContainsString('# HELP nightwatch_notification_duration_seconds Notification duration observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_notification_duration_seconds histogram', $output);
+        $this->assertStringContainsString('nightwatch_notification_duration_seconds_bucket{channel="mail",class="App\\\\Notifications\\\\OrderShipped",execution_source="request",le="0.01"} 1', $output);
+        $this->assertStringContainsString('nightwatch_notification_duration_seconds_bucket{channel="mail",class="App\\\\Notifications\\\\OrderShipped",execution_source="request",le="+Inf"} 1', $output);
+        $this->assertStringContainsString('nightwatch_notification_duration_seconds_sum{channel="mail",class="App\\\\Notifications\\\\OrderShipped",execution_source="request"} 0.01', $output);
+        $this->assertStringContainsString('nightwatch_notification_duration_seconds_count{channel="mail",class="App\\\\Notifications\\\\OrderShipped",execution_source="request"} 1', $output);
     }
 }
