@@ -240,4 +240,51 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('nightwatch_db_query_duration_seconds_sum{connection="mysql",connection_type="read",execution_source="request"} 0.01', $output);
         $this->assertStringContainsString('nightwatch_db_query_duration_seconds_count{connection="mysql",connection_type="read",execution_source="request"} 1', $output);
     }
+
+    public function test_outgoing_request_record_increments_outgoing_http_requests_counter_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'outgoing-request',
+            'execution_source' => 'request',
+            'host' => 'api.example.com',
+            'method' => 'POST',
+            'status_code' => 201,
+            'duration' => 10000,
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $this->assertSame(1.0, $snapshot['metrics']['nightwatch_outgoing_http_requests_total|execution_source=request,host=api.example.com,method=POST,status_code=201']);
+        $this->assertStringContainsString('# HELP nightwatch_outgoing_http_requests_total Total outgoing HTTP requests observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_outgoing_http_requests_total counter', $output);
+        $this->assertStringContainsString('nightwatch_outgoing_http_requests_total{execution_source="request",host="api.example.com",method="POST",status_code="201"} 1', $output);
+    }
+
+    public function test_outgoing_request_record_updates_outgoing_request_duration_histogram_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'outgoing-request',
+            'execution_source' => 'request',
+            'host' => 'api.example.com',
+            'method' => 'POST',
+            'status_code' => 201,
+            'duration' => 10000,
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $histogram = $snapshot['histograms']['nightwatch_outgoing_http_request_duration_seconds|execution_source=request,host=api.example.com,method=POST,status_code=201'];
+
+        $this->assertSame(0.01, $histogram['sum']);
+        $this->assertSame(1.0, $histogram['count']);
+        $this->assertSame(1.0, $histogram['buckets']['0.01']);
+        $this->assertStringContainsString('# HELP nightwatch_outgoing_http_request_duration_seconds Outgoing HTTP request duration observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_outgoing_http_request_duration_seconds histogram', $output);
+        $this->assertStringContainsString('nightwatch_outgoing_http_request_duration_seconds_bucket{execution_source="request",host="api.example.com",method="POST",status_code="201",le="0.01"} 1', $output);
+        $this->assertStringContainsString('nightwatch_outgoing_http_request_duration_seconds_bucket{execution_source="request",host="api.example.com",method="POST",status_code="201",le="+Inf"} 1', $output);
+        $this->assertStringContainsString('nightwatch_outgoing_http_request_duration_seconds_sum{execution_source="request",host="api.example.com",method="POST",status_code="201"} 0.01', $output);
+        $this->assertStringContainsString('nightwatch_outgoing_http_request_duration_seconds_count{execution_source="request",host="api.example.com",method="POST",status_code="201"} 1', $output);
+    }
 }
