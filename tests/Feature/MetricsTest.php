@@ -103,6 +103,33 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('nightwatch_http_request_queries_total{method="GET",route="/health",status_code="200"} 3', $output);
     }
 
+    public function test_request_record_updates_peak_memory_histogram_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'request',
+            'method' => 'GET',
+            'route_path' => '/health',
+            'status_code' => 200,
+            'duration' => 10000,
+            'peak_memory_usage' => 4194304,
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $histogram = $snapshot['histograms']['nightwatch_http_request_peak_memory_bytes|method=GET,route=/health,status_code=200'];
+
+        $this->assertSame(4194304.0, $histogram['sum']);
+        $this->assertSame(1.0, $histogram['count']);
+        $this->assertSame(1.0, $histogram['buckets']['4194304']);
+        $this->assertStringContainsString('# HELP nightwatch_http_request_peak_memory_bytes Peak memory usage on HTTP requests observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_http_request_peak_memory_bytes histogram', $output);
+        $this->assertStringContainsString('nightwatch_http_request_peak_memory_bytes_bucket{method="GET",route="/health",status_code="200",le="4194304"} 1', $output);
+        $this->assertStringContainsString('nightwatch_http_request_peak_memory_bytes_bucket{method="GET",route="/health",status_code="200",le="+Inf"} 1', $output);
+        $this->assertStringContainsString('nightwatch_http_request_peak_memory_bytes_sum{method="GET",route="/health",status_code="200"} 4194304', $output);
+        $this->assertStringContainsString('nightwatch_http_request_peak_memory_bytes_count{method="GET",route="/health",status_code="200"} 1', $output);
+    }
+
     public function test_log_record_increments_logs_counter_and_exports_it(): void
     {
         $this->app->make(NightwatchPromethusIngest::class)->write([
