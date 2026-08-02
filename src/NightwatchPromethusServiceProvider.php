@@ -3,6 +3,7 @@
 namespace Ihasan\NightwatchPromethus;
 
 use Ihasan\NightwatchPromethus\Contracts\MetricSink;
+use Ihasan\NightwatchPromethus\Debug\NightwatchPromethusState;
 use Ihasan\NightwatchPromethus\Ingest\NightwatchPromethusIngest;
 use Ihasan\NightwatchPromethus\Metrics\InMemoryMetricSink;
 use Illuminate\Support\ServiceProvider;
@@ -26,6 +27,15 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
         $this->app->singleton(NightwatchPromethusIngest::class, function (): NightwatchPromethusIngest {
             return new NightwatchPromethusIngest($this->app->make(MetricSink::class));
         });
+
+        $this->app->singleton(NightwatchPromethusState::class, function (): NightwatchPromethusState {
+            return new NightwatchPromethusState(
+                $this->app->make(NightwatchPromethusIngest::class),
+                $this->app->make(MetricSink::class),
+            );
+        });
+
+        $this->app->alias(NightwatchPromethusState::class, 'nightwatch-promethus.state');
     }
 
     public function boot(): void
