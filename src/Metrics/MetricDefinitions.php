@@ -35,6 +35,16 @@ class MetricDefinitions
         );
     }
 
+    public function httpRequestQueriesTotal(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_http_request_queries_total',
+            'counter',
+            'Total queries counted on HTTP requests by Nightwatch Promethus',
+            ['method', 'route', 'status_code'],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -44,6 +54,7 @@ class MetricDefinitions
             $this->httpRequestsTotal(),
             $this->logsTotal(),
             $this->httpRequestDurationSeconds(),
+            $this->httpRequestQueriesTotal(),
         ];
 
         $indexedDefinitions = [];

@@ -133,6 +133,12 @@ class NightwatchPromethusIngest implements IngestContract
         $definition = $this->metricDefinitions->httpRequestDurationSeconds();
 
         $this->metricSink->observeHistogram($definition->name, $labels, $duration, $definition->buckets);
+
+        $this->metricSink->incrementCounter(
+            $this->metricDefinitions->httpRequestQueriesTotal()->name,
+            $labels,
+            (int) ($record['queries'] ?? 0),
+        );
     }
 
     /**
