@@ -45,6 +45,17 @@ class MetricDefinitions
         );
     }
 
+    public function httpRequestPeakMemoryBytes(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_http_request_peak_memory_bytes',
+            'histogram',
+            'Peak memory usage on HTTP requests observed by Nightwatch Promethus',
+            ['method', 'route', 'status_code'],
+            [1048576.0, 4194304.0, 16777216.0, 67108864.0, 268435456.0, 1073741824.0],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -55,6 +66,7 @@ class MetricDefinitions
             $this->logsTotal(),
             $this->httpRequestDurationSeconds(),
             $this->httpRequestQueriesTotal(),
+            $this->httpRequestPeakMemoryBytes(),
         ];
 
         $indexedDefinitions = [];

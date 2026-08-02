@@ -139,6 +139,17 @@ class NightwatchPromethusIngest implements IngestContract
             $labels,
             (int) ($record['queries'] ?? 0),
         );
+
+        if (is_numeric($record['peak_memory_usage'] ?? null)) {
+            $peakMemoryDefinition = $this->metricDefinitions->httpRequestPeakMemoryBytes();
+
+            $this->metricSink->observeHistogram(
+                $peakMemoryDefinition->name,
+                $labels,
+                (float) $record['peak_memory_usage'],
+                $peakMemoryDefinition->buckets,
+            );
+        }
     }
 
     /**
