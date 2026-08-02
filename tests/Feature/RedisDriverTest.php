@@ -32,6 +32,13 @@ class RedisDriverTest extends TestCase
                 '1',
             ]);
         $connection->shouldReceive('command')
+            ->once()
+            ->with('HINCRBYFLOAT', [
+                'nightwatch_promethus:counters',
+                'nightwatch_http_request_queries_total|method=GET,route=/health,status_code=200',
+                '3',
+            ]);
+        $connection->shouldReceive('command')
             ->times(10)
             ->withArgs(function (string $command, array $parameters): bool {
                 return $command === 'HINCRBYFLOAT'
@@ -58,6 +65,7 @@ class RedisDriverTest extends TestCase
             ->with('HGETALL', ['nightwatch_promethus:counters'])
             ->andReturn([
                 'nightwatch_http_requests_total|method=GET,route=/health,status_code=200' => '1',
+                'nightwatch_http_request_queries_total|method=GET,route=/health,status_code=200' => '3',
             ]);
         $connection->shouldReceive('command')
             ->once()
@@ -95,12 +103,14 @@ class RedisDriverTest extends TestCase
             'route_path' => '/health',
             'status_code' => 200,
             'duration' => 10000,
+            'queries' => 3,
         ]);
 
         $output = $this->app->make(MetricsExporter::class)->render();
 
         $this->assertStringContainsString('# HELP nightwatch_http_requests_total Total HTTP requests observed by Nightwatch Promethus', $output);
         $this->assertStringContainsString('nightwatch_http_requests_total{method="GET",route="/health",status_code="200"} 1', $output);
+        $this->assertStringContainsString('nightwatch_http_request_queries_total{method="GET",route="/health",status_code="200"} 3', $output);
         $this->assertStringContainsString('# TYPE nightwatch_http_request_duration_seconds histogram', $output);
     }
 

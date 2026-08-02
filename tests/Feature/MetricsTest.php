@@ -83,6 +83,26 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('nightwatch_http_request_duration_seconds_count{method="GET",route="/health",status_code="200"} 1', $output);
     }
 
+    public function test_request_record_increments_request_queries_counter_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'request',
+            'method' => 'GET',
+            'route_path' => '/health',
+            'status_code' => 200,
+            'duration' => 10000,
+            'queries' => 3,
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $this->assertSame(3.0, $snapshot['metrics']['nightwatch_http_request_queries_total|method=GET,route=/health,status_code=200']);
+        $this->assertStringContainsString('# HELP nightwatch_http_request_queries_total Total queries counted on HTTP requests by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_http_request_queries_total counter', $output);
+        $this->assertStringContainsString('nightwatch_http_request_queries_total{method="GET",route="/health",status_code="200"} 3', $output);
+    }
+
     public function test_log_record_increments_logs_counter_and_exports_it(): void
     {
         $this->app->make(NightwatchPromethusIngest::class)->write([
