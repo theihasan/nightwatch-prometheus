@@ -54,4 +54,20 @@ class MetricsTest extends TestCase
         $response->assertHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
         $response->assertSee('# TYPE nightwatch_http_requests_total counter', false);
     }
+
+    public function test_log_record_increments_logs_counter_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'log',
+            'level' => 'error',
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $this->assertSame(1.0, $snapshot['metrics']['nightwatch_logs_total|level=error']);
+        $this->assertStringContainsString('# HELP nightwatch_logs_total Total log records observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_logs_total counter', $output);
+        $this->assertStringContainsString('nightwatch_logs_total{level="error"} 1', $output);
+    }
 }
