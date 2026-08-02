@@ -2,8 +2,10 @@
 
 namespace Ihasan\NightwatchPromethus;
 
+use Ihasan\NightwatchPromethus\Ingest\NightwatchPromethusIngest;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Nightwatch\Core;
+use Laravel\Nightwatch\Contracts\Ingest as NightwatchIngestContract;
 use Laravel\Nightwatch\NightwatchServiceProvider as LaravelNightwatchServiceProvider;
 
 class NightwatchPromethusServiceProvider extends ServiceProvider
@@ -14,6 +16,10 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
             __DIR__.'/../config/nightwatch-promethus.php',
             'nightwatch-promethus'
         );
+
+        $this->app->singleton(NightwatchPromethusIngest::class, function (): NightwatchPromethusIngest {
+            return new NightwatchPromethusIngest;
+        });
     }
 
     public function boot(): void
@@ -42,7 +48,13 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
                 return;
             }
 
-            $this->app->make(Core::class);
+            $core = $this->app->make(Core::class);
+            $ingest = $this->app->make(NightwatchPromethusIngest::class);
+
+            $core->ingest = $ingest;
+
+            $this->app->instance(NightwatchIngestContract::class, $ingest);
+            $this->app->instance('nightwatch-promethus.ingest-replaced', true);
 
         });
     }
