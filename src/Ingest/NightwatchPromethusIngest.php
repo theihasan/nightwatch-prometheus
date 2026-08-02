@@ -427,11 +427,24 @@ class NightwatchPromethusIngest implements IngestContract
             ? $record['class']
             : 'unknown';
 
-        $this->metricSink->incrementCounter($this->metricDefinitions->notificationsTotal()->name, [
+        $labels = [
             'execution_source' => $executionSource,
             'channel' => $channel,
             'class' => $class,
-        ]);
+        ];
+
+        $this->metricSink->incrementCounter($this->metricDefinitions->notificationsTotal()->name, $labels);
+
+        if (is_numeric($record['duration'] ?? null)) {
+            $definition = $this->metricDefinitions->notificationDurationSeconds();
+
+            $this->metricSink->observeHistogram(
+                $definition->name,
+                $labels,
+                (float) $record['duration'] / 1_000_000,
+                $definition->buckets,
+            );
+        }
     }
 
     /**
