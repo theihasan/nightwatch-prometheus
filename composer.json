@@ -1,0 +1,25 @@
+{
+    "name": "theihasan/nightwatch-promethus",
+    "description": "Prometheus exporter package for Laravel Nightwatch metrics.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^11.0|^12.0|^13.0",
+        "laravel/nightwatch": "^1.28"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ihasan\\NightwatchPromethus\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Ihasan\\NightwatchPromethus\\NightwatchPromethusServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
