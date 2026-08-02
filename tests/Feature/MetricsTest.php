@@ -203,6 +203,7 @@ class MetricsTest extends TestCase
             'execution_source' => 'request',
             'connection' => 'mysql',
             'connection_type' => 'read',
+            'duration' => 10000,
         ]);
 
         $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
@@ -212,5 +213,31 @@ class MetricsTest extends TestCase
         $this->assertStringContainsString('# HELP nightwatch_db_queries_total Total database queries observed by Nightwatch Promethus', $output);
         $this->assertStringContainsString('# TYPE nightwatch_db_queries_total counter', $output);
         $this->assertStringContainsString('nightwatch_db_queries_total{connection="mysql",connection_type="read",execution_source="request"} 1', $output);
+    }
+
+    public function test_query_record_updates_db_query_duration_histogram_and_exports_it(): void
+    {
+        $this->app->make(NightwatchPromethusIngest::class)->write([
+            't' => 'query',
+            'execution_source' => 'request',
+            'connection' => 'mysql',
+            'connection_type' => 'read',
+            'duration' => 10000,
+        ]);
+
+        $snapshot = $this->app->make(NightwatchPromethusState::class)->snapshot();
+        $output = $this->app->make(MetricsExporter::class)->render();
+
+        $histogram = $snapshot['histograms']['nightwatch_db_query_duration_seconds|connection=mysql,connection_type=read,execution_source=request'];
+
+        $this->assertSame(0.01, $histogram['sum']);
+        $this->assertSame(1.0, $histogram['count']);
+        $this->assertSame(1.0, $histogram['buckets']['0.01']);
+        $this->assertStringContainsString('# HELP nightwatch_db_query_duration_seconds Database query duration observed by Nightwatch Promethus', $output);
+        $this->assertStringContainsString('# TYPE nightwatch_db_query_duration_seconds histogram', $output);
+        $this->assertStringContainsString('nightwatch_db_query_duration_seconds_bucket{connection="mysql",connection_type="read",execution_source="request",le="0.01"} 1', $output);
+        $this->assertStringContainsString('nightwatch_db_query_duration_seconds_bucket{connection="mysql",connection_type="read",execution_source="request",le="+Inf"} 1', $output);
+        $this->assertStringContainsString('nightwatch_db_query_duration_seconds_sum{connection="mysql",connection_type="read",execution_source="request"} 0.01', $output);
+        $this->assertStringContainsString('nightwatch_db_query_duration_seconds_count{connection="mysql",connection_type="read",execution_source="request"} 1', $output);
     }
 }
