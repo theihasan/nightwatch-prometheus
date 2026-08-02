@@ -129,6 +129,17 @@ class MetricDefinitions
         );
     }
 
+    public function commandDurationSeconds(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_command_duration_seconds',
+            'histogram',
+            'Command duration observed by Nightwatch Promethus',
+            ['name', 'exit_code'],
+            [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -147,6 +158,7 @@ class MetricDefinitions
             $this->outgoingHttpRequestsTotal(),
             $this->outgoingHttpRequestDurationSeconds(),
             $this->commandExecutionsTotal(),
+            $this->commandDurationSeconds(),
         ];
 
         $indexedDefinitions = [];
