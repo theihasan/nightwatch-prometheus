@@ -7,6 +7,7 @@ use Ihasan\NightwatchPromethus\Contracts\MetricsExporter;
 use Ihasan\NightwatchPromethus\Debug\NightwatchPromethusState;
 use Ihasan\NightwatchPromethus\Ingest\NightwatchPromethusIngest;
 use Ihasan\NightwatchPromethus\Metrics\InMemoryMetricSink;
+use Ihasan\NightwatchPromethus\Metrics\MetricDefinitions;
 use Ihasan\NightwatchPromethus\Metrics\PrometheusTextExporter;
 use Ihasan\NightwatchPromethus\Metrics\RedisMetricSink;
 use Illuminate\Contracts\Redis\Factory as RedisFactory;
@@ -29,12 +30,22 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
             return $this->resolveMetricSink();
         });
 
+        $this->app->singleton(MetricDefinitions::class, function (): MetricDefinitions {
+            return new MetricDefinitions;
+        });
+
         $this->app->singleton(MetricsExporter::class, function (): MetricsExporter {
-            return new PrometheusTextExporter($this->app->make(MetricSink::class));
+            return new PrometheusTextExporter(
+                $this->app->make(MetricSink::class),
+                $this->app->make(MetricDefinitions::class),
+            );
         });
 
         $this->app->singleton(NightwatchPromethusIngest::class, function (): NightwatchPromethusIngest {
-            return new NightwatchPromethusIngest($this->app->make(MetricSink::class));
+            return new NightwatchPromethusIngest(
+                $this->app->make(MetricSink::class),
+                $this->app->make(MetricDefinitions::class),
+            );
         });
 
         $this->app->singleton(NightwatchPromethusState::class, function (): NightwatchPromethusState {

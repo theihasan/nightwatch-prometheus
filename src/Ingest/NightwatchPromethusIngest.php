@@ -3,6 +3,7 @@
 namespace Ihasan\NightwatchPromethus\Ingest;
 
 use Ihasan\NightwatchPromethus\Contracts\MetricSink;
+use Ihasan\NightwatchPromethus\Metrics\MetricDefinitions;
 use Laravel\Nightwatch\Contracts\Ingest as IngestContract;
 
 class NightwatchPromethusIngest implements IngestContract
@@ -18,10 +19,10 @@ class NightwatchPromethusIngest implements IngestContract
      */
     private array $recordTypeCounts = [];
 
-    public function __construct(private MetricSink $metricSink)
-    {
-        //
-    }
+    public function __construct(
+        private MetricSink $metricSink,
+        private MetricDefinitions $metricDefinitions,
+    ) {}
 
     public function write(array $record): void
     {
@@ -113,7 +114,7 @@ class NightwatchPromethusIngest implements IngestContract
             : '__unmatched__';
         $statusCode = (string) ($record['status_code'] ?? 'unknown');
 
-        $this->metricSink->incrementCounter('nightwatch_http_requests_total', [
+        $this->metricSink->incrementCounter($this->metricDefinitions->httpRequestsTotal()->name, [
             'method' => $method,
             'route' => $route,
             'status_code' => $statusCode,

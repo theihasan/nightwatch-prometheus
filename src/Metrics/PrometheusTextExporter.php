@@ -7,10 +7,10 @@ use Ihasan\NightwatchPromethus\Contracts\MetricsExporter;
 
 class PrometheusTextExporter implements MetricsExporter
 {
-    public function __construct(private MetricSink $metricSink)
-    {
-        //
-    }
+    public function __construct(
+        private MetricSink $metricSink,
+        private MetricDefinitions $metricDefinitions,
+    ) {}
 
     public function render(): string
     {
@@ -29,11 +29,17 @@ class PrometheusTextExporter implements MetricsExporter
         ksort($groupedMetrics);
 
         foreach ($groupedMetrics as $name => $samples) {
-            $lines[] = '# HELP '.$name.' Exported by Nightwatch Promethus';
-            $lines[] = '# TYPE '.$name.' counter';
+            $definition = $this->metricDefinitions->all()[$name] ?? null;
+
+            if ($definition === null) {
+                continue;
+            }
+
+            $lines[] = '# HELP '.$definition->name.' '.$definition->help;
+            $lines[] = '# TYPE '.$definition->name.' '.$definition->type;
 
             foreach ($samples as $sample) {
-                $lines[] = $name.$this->formatLabels($sample['labels']).' '.$sample['value'];
+                $lines[] = $definition->name.$this->formatLabels($sample['labels']).' '.$sample['value'];
             }
 
             $lines[] = '';
