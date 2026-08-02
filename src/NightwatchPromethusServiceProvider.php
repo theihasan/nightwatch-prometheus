@@ -3,6 +3,8 @@
 namespace Ihasan\NightwatchPromethus;
 
 use Illuminate\Support\ServiceProvider;
+use Laravel\Nightwatch\Core;
+use Laravel\Nightwatch\NightwatchServiceProvider as LaravelNightwatchServiceProvider;
 
 class NightwatchPromethusServiceProvider extends ServiceProvider
 {
@@ -21,5 +23,27 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
                 __DIR__.'/../config/nightwatch-promethus.php' => config_path('nightwatch-promethus.php'),
             ], 'nightwatch-promethus-config');
         }
+
+        $this->registerNightwatchIngestReplacementHook();
+    }
+
+    private function registerNightwatchIngestReplacementHook(): void
+    {
+        $this->app->booted(function (): void {
+            if (! config('nightwatch-promethus.enabled', true)) {
+                return;
+            }
+
+            if (! class_exists(LaravelNightwatchServiceProvider::class)) {
+                return;
+            }
+
+            if (! $this->app->bound(Core::class)) {
+                return;
+            }
+
+            $this->app->make(Core::class);
+
+        });
     }
 }
