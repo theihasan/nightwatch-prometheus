@@ -77,6 +77,16 @@ class MetricDefinitions
         );
     }
 
+    public function dbQueriesTotal(): MetricDefinition
+    {
+        return new MetricDefinition(
+            'nightwatch_db_queries_total',
+            'counter',
+            'Total database queries observed by Nightwatch Promethus',
+            ['execution_source', 'connection', 'connection_type'],
+        );
+    }
+
     /**
      * @return array<string, MetricDefinition>
      */
@@ -90,6 +100,7 @@ class MetricDefinitions
             $this->httpRequestPeakMemoryBytes(),
             $this->httpRequestStageDurationSeconds(),
             $this->exceptionsTotal(),
+            $this->dbQueriesTotal(),
         ];
 
         $indexedDefinitions = [];

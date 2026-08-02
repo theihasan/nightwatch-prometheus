@@ -107,6 +107,7 @@ class NightwatchPromethusIngest implements IngestContract
         match ($record['t'] ?? null) {
             'request' => $this->recordRequestMetric($record),
             'exception' => $this->recordExceptionMetric($record),
+            'query' => $this->recordQueryMetric($record),
             'log' => $this->recordLogMetric($record),
             default => null,
         };
@@ -195,6 +196,28 @@ class NightwatchPromethusIngest implements IngestContract
             'execution_source' => $executionSource,
             'class' => $class,
             'result' => $result,
+        ]);
+    }
+
+    /**
+     * @param array<mixed> $record
+     */
+    private function recordQueryMetric(array $record): void
+    {
+        $executionSource = is_string($record['execution_source'] ?? null) && $record['execution_source'] !== ''
+            ? $record['execution_source']
+            : 'unknown';
+        $connection = is_string($record['connection'] ?? null) && $record['connection'] !== ''
+            ? $record['connection']
+            : 'unknown';
+        $connectionType = is_string($record['connection_type'] ?? null) && $record['connection_type'] !== ''
+            ? $record['connection_type']
+            : 'unknown';
+
+        $this->metricSink->incrementCounter($this->metricDefinitions->dbQueriesTotal()->name, [
+            'execution_source' => $executionSource,
+            'connection' => $connection,
+            'connection_type' => $connectionType,
         ]);
     }
 
