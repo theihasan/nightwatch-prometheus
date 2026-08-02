@@ -14,6 +14,7 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Nightwatch\Core;
 use Laravel\Nightwatch\Contracts\Ingest as NightwatchIngestContract;
 use Laravel\Nightwatch\NightwatchServiceProvider as LaravelNightwatchServiceProvider;
+use RuntimeException;
 
 class NightwatchPromethusServiceProvider extends ServiceProvider
 {
@@ -25,14 +26,7 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(MetricSink::class, function (): MetricSink {
-            return match (config('nightwatch-promethus.storage.driver', 'redis')) {
-                'in_memory' => new InMemoryMetricSink,
-                default => new RedisMetricSink(
-                    $this->app->make(RedisFactory::class),
-                    config('nightwatch-promethus.storage.redis.connection', 'default'),
-                    config('nightwatch-promethus.storage.redis.prefix', 'nightwatch_promethus'),
-                ),
-            };
+            return $this->resolveMetricSink();
         });
 
         $this->app->singleton(MetricsExporter::class, function (): MetricsExporter {
@@ -94,5 +88,18 @@ class NightwatchPromethusServiceProvider extends ServiceProvider
             $this->app->instance('nightwatch-promethus.ingest-replaced', true);
 
         });
+    }
+
+    private function resolveMetricSink(): MetricSink
+    {
+        return match (config('nightwatch-promethus.storage.driver', 'redis')) {
+            'in_memory' => new InMemoryMetricSink,
+            'redis' => new RedisMetricSink(
+                $this->app->make(RedisFactory::class),
+                config('nightwatch-promethus.storage.redis.connection', 'default'),
+                config('nightwatch-promethus.storage.redis.prefix', 'nightwatch_promethus'),
+            ),
+            default => throw new RuntimeException('Unsupported nightwatch-promethus storage driver ['.config('nightwatch-promethus.storage.driver').'].'),
+        };
     }
 }
