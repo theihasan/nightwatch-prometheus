@@ -108,6 +108,7 @@ class NightwatchPromethusIngest implements IngestContract
             'request' => $this->recordRequestMetric($record),
             'command' => $this->recordCommandMetric($record),
             'exception' => $this->recordExceptionMetric($record),
+            'queued-job' => $this->recordQueuedJobMetric($record),
             'query' => $this->recordQueryMetric($record),
             'outgoing-request' => $this->recordOutgoingRequestMetric($record),
             'log' => $this->recordLogMetric($record),
@@ -300,6 +301,32 @@ class NightwatchPromethusIngest implements IngestContract
                 $definition->buckets,
             );
         }
+    }
+
+    /**
+     * @param array<mixed> $record
+     */
+    private function recordQueuedJobMetric(array $record): void
+    {
+        $executionSource = is_string($record['execution_source'] ?? null) && $record['execution_source'] !== ''
+            ? $record['execution_source']
+            : 'unknown';
+        $name = is_string($record['name'] ?? null) && $record['name'] !== ''
+            ? $record['name']
+            : 'unknown';
+        $connection = is_string($record['connection'] ?? null) && $record['connection'] !== ''
+            ? $record['connection']
+            : 'unknown';
+        $queue = is_string($record['queue'] ?? null) && $record['queue'] !== ''
+            ? $record['queue']
+            : 'unknown';
+
+        $this->metricSink->incrementCounter($this->metricDefinitions->jobsQueuedTotal()->name, [
+            'execution_source' => $executionSource,
+            'name' => $name,
+            'connection' => $connection,
+            'queue' => $queue,
+        ]);
     }
 
     /**
