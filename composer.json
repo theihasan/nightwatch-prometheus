@@ -1,5 +1,5 @@
 {
-    "name": "theihasan/nightwatch-promethus",
+    "name": "theihasan/nightwatch-prometheus",
     "description": "Prometheus exporter package for Laravel Nightwatch metrics.",
     "type": "library",
     "license": "MIT",
