@@ -1,6 +1,6 @@
 # Nightwatch Promethus
 
-`theihasan/nightwatch-promethus` exposes Laravel Nightwatch records as Prometheus metrics.
+`theihasan/nightwatch-prometheus` exposes Laravel Nightwatch records as Prometheus metrics.
 
 It runs on top of `laravel/nightwatch`, but it does not require a Nightwatch subscription. Nightwatch is used as the in-app event collection layer, while this package replaces Nightwatch's default ingest path and exports metrics for Prometheus scraping.
 
