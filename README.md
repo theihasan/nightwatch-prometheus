@@ -103,6 +103,23 @@ Currently implemented:
 - `nightwatch_notifications_total`
 - `nightwatch_notification_duration_seconds`
 
+## Known Limitation
+
+These two metrics are implemented in the package, but they may not appear in real worker flows until the upstream Nightwatch issue is fixed:
+
+- `nightwatch_job_attempts_total`
+- `nightwatch_job_attempt_duration_seconds`
+
+Upstream issue:
+
+- `laravel/nightwatch#406`
+- https://github.com/laravel/nightwatch/issues/406
+
+Current status:
+
+- `nightwatch_jobs_queued_total` works
+- `job-attempt` record emission appears to be blocked by Nightwatch worker behavior in real `queue:work` processing
+
 ## Example PromQL
 
 Request rate:
