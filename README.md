@@ -103,6 +103,25 @@ Currently implemented:
 - `nightwatch_notifications_total`
 - `nightwatch_notification_duration_seconds`
 
+## Log Metric Caution
+
+`nightwatch_logs_total` is verified working through the dedicated Nightwatch log channel.
+
+If you want normal application logs to be captured by Nightwatch in a typical Laravel stack setup, include the `nightwatch` channel in your log stack.
+
+Example:
+
+```env
+LOG_CHANNEL=stack
+LOG_STACK=single,nightwatch
+```
+
+Then clear config:
+
+```bash
+php artisan config:clear
+```
+
 ## Known Limitation
 
 These two metrics are implemented in the package, but they may not appear in real worker flows until the upstream Nightwatch issue is fixed:
