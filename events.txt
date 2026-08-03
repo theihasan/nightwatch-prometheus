@@ -1,0 +1,33 @@
+So far mplemented metrics
+
+- nightwatch_http_requests_total
+- nightwatch_http_request_duration_seconds
+- nightwatch_http_request_stage_duration_seconds
+- nightwatch_http_request_peak_memory_bytes
+- nightwatch_http_request_queries_total
+- nightwatch_exceptions_total
+- nightwatch_db_queries_total
+- nightwatch_db_query_duration_seconds
+- nightwatch_outgoing_http_requests_total
+- nightwatch_outgoing_http_request_duration_seconds
+- nightwatch_jobs_queued_total
+- nightwatch_job_attempts_total
+- nightwatch_job_attempt_duration_seconds
+- nightwatch_scheduled_task_runs_total
+- nightwatch_command_executions_total
+- nightwatch_command_duration_seconds
+- nightwatch_cache_events_total
+- nightwatch_logs_total
+- nightwatch_notifications_total
+- nightwatch_notification_duration_seconds
+
+Future Roadmap
+
+- nightwatch_mail_sent_total
+- nightwatch_mail_duration_seconds
+- nightwatch_cache_event_duration_seconds
+- nightwatch_cache_event_ttl_seconds
+- nightwatch_outgoing_http_request_size_bytes
+- nightwatch_outgoing_http_response_size_bytes
+- nightwatch_http_request_size_bytes
+- nightwatch_http_response_size_bytes
